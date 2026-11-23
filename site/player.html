@@ -32,7 +32,7 @@
   head.innerHTML = '<div class="tag"><a class="plain" href="' + teamUrl(p.team) + '">' + esc(tname) + '</a></div><h1>' + esc(p.id) + badge + '</h1>' +
     '<p class="lead">' + esc(p.role) + (p.price ? " · drafted for $" + esc(p.price) : "") + '</p>';
   if (!s.gp) { document.getElementById("kpis").innerHTML = ""; document.getElementById("pool").innerHTML = '<p class="note">No games played yet.</p>'; document.getElementById("hist").innerHTML = ""; return; }
-  const k = [["Games", s.gp], ["Record", s.w + "–" + s.l], ["KDA", fmt(s.kda, 2)], ["K / D / A", fmt(s.k / s.gp) + " / " + fmt(s.d / s.gp) + " / " + fmt(s.a / s.gp)],
+  const k = [["Rating", fmt(s.rating)], ["Games", s.gp], ["Record", s.w + "–" + s.l], ["KDA", fmt(s.kda, 2)], ["K / D / A", fmt(s.k / s.gp) + " / " + fmt(s.d / s.gp) + " / " + fmt(s.a / s.gp)],
     ["Kill part.", pct(s.kpAvg)], ["CS / min", fmt(s.csm)], ["Damage / min", Math.round(s.dpm)], ["Vision / min", fmt(s.vsm, 2)], ["Gold / min", Math.round(s.gpm)], ["Solo kills", s.solo]];
   document.getElementById("kpis").innerHTML = k.map(x => '<div class="kpi"><span>' + x[0] + '</span><b>' + x[1] + '</b></div>').join("");
   const pool = Object.entries(s.champs).map(([c, v]) => ({ c, gp: v.gp, wr: v.w / v.gp, kda: (v.k + v.a) / Math.max(1, v.d), line: fmt(v.k / v.gp) + " / " + fmt(v.d / v.gp) + " / " + fmt(v.a / v.gp) }));
@@ -41,12 +41,13 @@
     { k: "wr", label: "Win%", num: 1, show: r => pct(r.wr) }, { k: "kda", label: "KDA", num: 1, show: r => fmt(r.kda, 2) },
     { k: "line", label: "Avg K / D / A", num: 1, show: r => r.line }], pool, "gp");
   const hist = s.games.map((g, i) => ({ i, date: g.date, champ: g.champ, res: g.win, opp: S.teamName[g.opp] || g.opp, oppCode: g.opp, kda: g.k + "/" + g.d + "/" + g.a,
-    kdaN: (g.k + g.a) / Math.max(1, g.d), cs: g.cs, dmg: g.dmg, vis: g.vis, min: g.min, role: g.role }));
+    kdaN: (g.k + g.a) / Math.max(1, g.d), rating: g.rating, cs: g.cs, dmg: g.dmg, vis: g.vis, min: g.min, role: g.role }));
   sortableTable(document.getElementById("hist"), [
     { k: "i", label: "#", num: 1, show: r => r.i + 1 }, { k: "date", label: "Date", show: r => esc(r.date) },
     { k: "champ", label: "Champion", show: r => champCell(icon, r.champ) },
     { k: "res", label: "Result", show: r => r.res ? '<span class="w">Win</span>' : '<span class="l">Loss</span>' },
     { k: "opp", label: "Vs", show: r => '<a class="plain" href="' + teamUrl(r.oppCode) + '">' + esc(r.opp) + '</a>' },
+    { k: "rating", label: "Rating", num: 1, show: r => '<b>' + fmt(r.rating) + '</b>' },
     { k: "kdaN", label: "K/D/A", num: 1, show: r => r.kda }, { k: "cs", label: "CS", num: 1, show: r => r.cs },
     { k: "dmg", label: "Damage", num: 1, show: r => r.dmg.toLocaleString() }, { k: "vis", label: "Vision", num: 1, show: r => r.vis },
     { k: "min", label: "Length", num: 1, show: r => Math.floor(r.min) + ":" + String(Math.round((r.min % 1) * 60)).padStart(2, "0") }], hist, "i");

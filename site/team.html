@@ -38,12 +38,13 @@
     ["Blue side", t.blueGp ? t.blueW + "–" + (t.blueGp - t.blueW) : "–"], ["Red side", (t.gp - t.blueGp) ? (t.w - t.blueW) + "–" + (t.gp - t.blueGp - (t.w - t.blueW)) : "–"]]
     .map(x => '<div class="kpi"><span>' + x[0] + '</span><b>' + x[1] + '</b></div>').join("");
   const roster = Object.values(S.players).filter(p => p.team === code).map(p => ({ id: p.id, role: p.role, type: p.type, subFor: p.subFor, price: p.price ? +p.price : 0,
-    gp: p.stats.gp, kda: p.stats.kda, kp: p.stats.kpAvg, csm: p.stats.csm, dpm: p.stats.dpm,
+    gp: p.stats.gp, rating: p.stats.rating, kda: p.stats.kda, kp: p.stats.kpAvg, csm: p.stats.csm, dpm: p.stats.dpm,
     order: ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"].indexOf(p.role) + (p.type === "Sub" ? 10 : 0) }));
   sortableTable(document.getElementById("roster"), [
     { k: "order", label: "Role", show: r => esc(r.role) },
     { k: "id", label: "Player", show: r => '<a class="plain" href="' + playerUrl(r.id) + '">' + esc(r.id) + '</a>' + (r.type === "Captain" ? " 👑" : "") + (r.type === "Sub" ? ' <span class="sub">sub' + (r.subFor ? " for " + esc(r.subFor.split("#")[0]) : "") + '</span>' : "") },
     { k: "price", label: "Price", num: 1, show: r => r.price ? "$" + r.price : "–" }, { k: "gp", label: "GP", num: 1, show: r => r.gp },
+    { k: "rating", label: "Rating", num: 1, show: r => r.gp ? '<b>' + fmt(r.rating) + '</b>' : "–" },
     { k: "kda", label: "KDA", num: 1, show: r => r.gp ? fmt(r.kda, 2) : "–" }, { k: "kp", label: "KP", num: 1, show: r => r.gp ? pct(r.kp) : "–" },
     { k: "csm", label: "CS/m", num: 1, show: r => r.gp ? fmt(r.csm) : "–" }, { k: "dpm", label: "DPM", num: 1, show: r => r.gp ? Math.round(r.dpm) : "–" }], roster, "order");
   document.querySelector("#roster th[data-k=order]").click();

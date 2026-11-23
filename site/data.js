@@ -122,7 +122,8 @@ async function loadStats() {
       date: (row[0] || "").trim(), team: (row[1] || "").trim(), player: id, role: (row[3] || "").trim(), side: (row[4] || "").trim(),
       win: num(row[5]) > 0 ? 1 : 0, champ: (row[7] || "").trim(), k: num(row[8]), d: num(row[9]), a: num(row[10]),
       kp: num(row[12]), fb: num(row[13]), dmg: num(row[14]), vis: num(row[16]), cs: num(row[21]), gold: num(row[23]),
-      gd15: num(row[27]), csd15: num(row[30]), ft: num(row[33]), solo: num(row[37]), min: num(row[43]), match: (row[45] || "").trim()
+      gd15: num(row[27]), csd15: num(row[30]), ft: num(row[33]), solo: num(row[37]), min: num(row[43]), match: (row[45] || "").trim(),
+      cw: num(row[19]), wk: num(row[20]), tdmg: num(row[35]), odmg: num(row[36])
     };
     games.push(g);
     (matches[g.match] || (matches[g.match] = [])).push(g);
@@ -147,6 +148,7 @@ async function loadStats() {
     }
   }
   Object.values(players).forEach(p => derive(p.stats));
+  computeRatings(games, players);
   return { players, alias, games, teams: teamsAgg, champs: champAgg, teamName };
 }
 
@@ -183,4 +185,57 @@ function sortableTable(el, cols, rows, initial) {
     });
   };
   draw();
+}
+
+// ---------- Player rating ----------
+// Each game is scored against other games in the same role (50 = role average, 10 = one standard deviation),
+// using role-weighted categories. A player's rating is their average game rating, pulled toward 50
+// until they have played enough games (2 "phantom" average games).
+const RATING_WEIGHTS = {
+  TOP:     { lane: 30, dmg: 25, combat: 20, vision: 10, obj: 15 },
+  JUNGLE:  { lane: 15, dmg: 15, combat: 25, vision: 20, obj: 25 },
+  MID:     { lane: 25, dmg: 30, combat: 25, vision: 10, obj: 10 },
+  ADC:     { lane: 25, dmg: 35, combat: 20, vision: 5,  obj: 15 },
+  SUPPORT: { lane: 15, dmg: 5,  combat: 30, vision: 40, obj: 10 }
+};
+const RATING_CATS = {
+  lane: ["gd15", "csd15", "csm"], dmg: ["dpm", "dshare", "dpg"], combat: ["kp", "kpm", "negDpm", "solom"],
+  vision: ["vsm", "cwm", "wkm"], obj: ["tdm", "odm", "fb", "ft"]
+};
+const RATING_PRIOR_GAMES = 2;
+
+function computeRatings(games, players) {
+  const tot = {};
+  games.forEach(g => { const k = g.match + "|" + g.team; const t = tot[k] || (tot[k] = { dmg: 0 }); t.dmg += g.dmg; });
+  const m = {};
+  games.forEach(g => {
+    const min = g.min || 1;
+    m[g.match + "|" + g.player] = {
+      gd15: g.gd15, csd15: g.csd15, csm: g.cs / min, dpm: g.dmg / min, dshare: g.dmg / Math.max(1, tot[g.match + "|" + g.team].dmg),
+      dpg: g.dmg / Math.max(1, g.gold), kp: g.kp, kpm: g.k / min, negDpm: -g.d / min, solom: g.solo / min,
+      vsm: g.vis / min, cwm: g.cw / min, wkm: g.wk / min, tdm: g.tdmg / min, odm: g.odmg / min, fb: g.fb, ft: g.ft
+    };
+  });
+  const mean = a => a.reduce((s, x) => s + x, 0) / Math.max(1, a.length);
+  const sd = a => { const mu = mean(a); return Math.sqrt(mean(a.map(x => (x - mu) ** 2))) || 1; };
+  const byRole = {};
+  games.forEach(g => (byRole[g.role] || (byRole[g.role] = [])).push(g));
+  for (const [role, list] of Object.entries(byRole)) {
+    const w = RATING_WEIGHTS[role] || RATING_WEIGHTS.MID;
+    const keys = Object.values(RATING_CATS).flat(), z = {};
+    keys.forEach(k => {
+      const vals = list.map(g => m[g.match + "|" + g.player][k]), mu = mean(vals), s = sd(vals);
+      list.forEach((g, i) => (z[g.match + "|" + g.player] || (z[g.match + "|" + g.player] = {}))[k] = (vals[i] - mu) / s);
+    });
+    const comp = list.map(g => {
+      const zz = z[g.match + "|" + g.player];
+      return Object.entries(RATING_CATS).reduce((s, [c, ks]) => s + w[c] * mean(ks.map(k => zz[k])), 0) / 100;
+    });
+    const mu = mean(comp), s = sd(comp);
+    list.forEach((g, i) => g.rating = 50 + 10 * (comp[i] - mu) / s);
+  }
+  Object.values(players).forEach(p => {
+    const gs = p.stats.games, n = gs.length;
+    p.stats.rating = n ? (n * mean(gs.map(g => g.rating)) + RATING_PRIOR_GAMES * 50) / (n + RATING_PRIOR_GAMES) : null;
+  });
 }

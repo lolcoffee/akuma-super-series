@@ -11,7 +11,7 @@
   <nav><a href="/">Home</a><a href="/schedule">Schedule &amp; Results</a><a href="/teams">Teams</a><a class="on" href="/stats">Stats</a><a href="/rules">Rulebook</a></nav>
   <div class="tag">Akuma Super Series</div>
   <h1>Stats</h1>
-  <p class="lead">Every player and champion across all games played. Click a column to sort; click a player for their full page.</p>
+  <p class="lead">Every player and champion across all games played. Click a column to sort; click a player for their full page.</p>\n  <p class="sub" style="margin-top:8px">Rating compares each game to other players in the same role (50 = role average) across laning, damage, combat, vision and objectives, weighted by role. Ratings settle as players play more games.</p>
   <section>
     <h2>Players</h2>
     <div class="filters" id="roles"></div>
@@ -33,13 +33,14 @@
   try { [S, icon] = await Promise.all([loadStats(), champIcons()]); } catch (e) { showError(pEl, e); showError(cEl, e); return; }
   const rows = Object.values(S.players).filter(p => p.stats.gp > 0).map(p => {
     const s = p.stats, top = Object.entries(s.champs).sort((a, b) => b[1].gp - a[1].gp).slice(0, 3).map(c => c[0]);
-    return { id: p.id, team: S.teamName[p.team] || p.team, code: p.team, role: p.role, type: p.type, gp: s.gp, wr: s.wr, kda: s.kda,
+    return { id: p.id, team: S.teamName[p.team] || p.team, code: p.team, role: p.role, type: p.type, gp: s.gp, rating: s.rating, wr: s.wr, kda: s.kda,
       k: s.k / s.gp, d: s.d / s.gp, a: s.a / s.gp, kp: s.kpAvg, csm: s.csm, dpm: s.dpm, vsm: s.vsm, top };
   });
   const cols = [
     { k: "id", label: "Player", show: r => '<a class="plain" href="' + playerUrl(r.id) + '">' + esc(r.id) + '</a>' + (r.type === "Sub" ? ' <span class="sub">sub</span>' : "") },
     { k: "team", label: "Team", show: r => '<a class="plain" href="' + teamUrl(r.code) + '">' + esc(r.team) + '</a>' },
     { k: "role", label: "Role", show: r => esc(r.role) },
+    { k: "rating", label: "Rating", num: 1, show: r => '<b>' + fmt(r.rating) + '</b>' },
     { k: "gp", label: "GP", num: 1, show: r => r.gp },
     { k: "wr", label: "Win%", num: 1, show: r => pct(r.wr) },
     { k: "kda", label: "KDA", num: 1, show: r => fmt(r.kda, 2) },
@@ -54,7 +55,7 @@
   const show = role => {
     rEl.innerHTML = roles.map(x => '<button class="' + (x === role ? "on" : "") + '">' + x + '</button>').join("");
     rEl.querySelectorAll("button").forEach((b, i) => b.onclick = () => show(roles[i]));
-    sortableTable(pEl, cols, rows.filter(r => role === "All" || r.role === role), "kda");
+    sortableTable(pEl, cols, rows.filter(r => role === "All" || r.role === role), "rating");
   };
   show("All");
 
