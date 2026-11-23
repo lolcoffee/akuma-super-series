@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Schedule &amp; Results – Akuma Super Series</title>
+<link rel="stylesheet" href="/page.css">
+</head>
+<body>
+<main>
+  <nav><a href="/">Home</a><a class="on" href="/schedule">Schedule &amp; Results</a><a href="/teams">Teams</a><a href="/stats">Stats</a><a href="/rules">Rulebook</a></nav>
+  <div class="tag">Akuma Super Series</div>
+  <h1>Schedule &amp; Results</h1>
+  <p class="lead">All matches start at 8:00 PM Eastern. Results update automatically from the official tournament sheet.</p>
+
+  <section>
+    <h2>Swiss standings</h2>
+    <div id="standings"><p class="note">Loading…</p></div>
+  </section>
+
+  <section>
+    <h2>Matches</h2>
+    <div id="matches"><p class="note">Loading…</p></div>
+  </section>
+</main>
+<footer>
+  Akuma Super Series is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
+</footer>
+<script src="/data.js"></script>
+<script>
+(async () => {
+  const mEl = document.getElementById("matches"), sEl = document.getElementById("standings");
+  let sched, swiss;
+  try { [sched, swiss] = await Promise.all([loadTab("schedule"), loadTab("swiss")]); }
+  catch (e) { showError(mEl, e); showError(sEl, e); return; }
+
+  const rounds = parseSchedule(sched);
+
+  // Matches
+  mEl.innerHTML = rounds.map(rd => {
+    const list = rd.matches.filter(m => m.a || m.b);
+    const body = list.length ? list.map(m => {
+      const done = m.sa !== "";
+      return '<div class="match">' +
+        '<span class="t' + (m.winner && m.winner === m.a ? " w" : "") + '">' + esc(m.a || "TBD") + '</span>' +
+        '<span class="score' + (done ? "" : " tbd") + '">' + (done ? esc(m.sa) + " – " + esc(m.sb) : "vs") + '</span>' +
+        '<span class="t b' + (m.winner && m.winner === m.b ? " w" : "") + '">' + esc(m.b || "TBD") + '</span></div>';
+    }).join("") : '<p class="note">Matchups to be decided.</p>';
+    return '<div class="round"><h3>' + esc(rd.title) + '</h3>' + body + '</div>';
+  }).join("");
+
+  // Team names from the Swiss Stage "TEAMS" list (code -> name)
+  const names = {};
+  for (let r = 0; r < swiss.length; r++) for (let c = 0; c < (swiss[r] || []).length; c++) {
+    if (at(swiss, r, c) === "TEAMS") {
+      for (let k = r + 1; k < swiss.length && at(swiss, k, c); k++) names[at(swiss, k, c)] = at(swiss, k, c + 1);
+    }
+  }
+  const codeList = (col, r0, r1) => { const out = []; for (let r = r0; r <= r1; r++) { const v = at(swiss, r, col); if (v) out.push(v); } return out; };
+  const qualified = new Set([...codeList(11, 8, 10), ...codeList(16, 8, 10), ...codeList(21, 8, 10)].map(c => names[c] || c));
+  const eliminated = new Set([...codeList(16, 21, 23), ...codeList(21, 16, 18)].map(c => names[c] || c));
+
+  // Swiss record from best-of-3 Swiss series (round robin games are not counted)
+  const rec = {};
+  Object.values(names).forEach(n => rec[n] = { w: 0, l: 0, gw: 0, gl: 0 });
+  rounds.filter(rd => /^ROUND/i.test(rd.title) && !/ROUND ROBIN/i.test(rd.title)).forEach(rd => rd.matches.forEach(m => {
+    if (!m.winner || !rec[m.a] || !rec[m.b]) return;
+    const A = rec[m.a], B = rec[m.b];
+    A.gw += +m.sa; A.gl += +m.sb; B.gw += +m.sb; B.gl += +m.sa;
+    if (m.winner === m.a) { A.w++; B.l++; } else { B.w++; A.l++; }
+  }));
+  const rowsS = Object.entries(rec).sort((x, y) => (y[1].w - x[1].w) || (x[1].l - y[1].l) || ((y[1].gw - y[1].gl) - (x[1].gw - x[1].gl)) || x[0].localeCompare(y[0]));
+  sEl.innerHTML = '<table><tr><th>Team</th><th class="num">Record</th><th class="num">Games</th><th>Status</th></tr>' +
+    rowsS.map(([n, s]) => {
+      const st = qualified.has(n) ? '<span class="st q">Qualified</span>' : eliminated.has(n) ? '<span class="st e">Eliminated</span>' : '<span class="st a">In contention</span>';
+      return '<tr><td>' + esc(n) + '</td><td class="num">' + s.w + '–' + s.l + '</td><td class="num">' + s.gw + '–' + s.gl + '</td><td>' + st + '</td></tr>';
+    }).join("") + '</table>';
+})();
+</script>
+</body>
+</html>

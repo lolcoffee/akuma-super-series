@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stats – Akuma Super Series</title>
+<link rel="stylesheet" href="/page.css">
+</head>
+<body>
+<main>
+  <nav><a href="/">Home</a><a href="/schedule">Schedule &amp; Results</a><a href="/teams">Teams</a><a class="on" href="/stats">Stats</a><a href="/rules">Rulebook</a></nav>
+  <div class="tag">Akuma Super Series</div>
+  <h1>Stats</h1>
+  <p class="lead">Every player and champion across all games played. Click a column to sort; click a player for their full page.</p>
+  <section>
+    <h2>Players</h2>
+    <div class="filters" id="roles"></div>
+    <div id="players"><p class="note">Loading…</p></div>
+  </section>
+  <section>
+    <h2>Champions</h2>
+    <div id="champs"><p class="note">Loading…</p></div>
+  </section>
+</main>
+<footer>
+  Akuma Super Series is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
+</footer>
+<script src="/data.js"></script>
+<script>
+(async () => {
+  const pEl = document.getElementById("players"), cEl = document.getElementById("champs"), rEl = document.getElementById("roles");
+  let S, icon;
+  try { [S, icon] = await Promise.all([loadStats(), champIcons()]); } catch (e) { showError(pEl, e); showError(cEl, e); return; }
+  const rows = Object.values(S.players).filter(p => p.stats.gp > 0).map(p => {
+    const s = p.stats, top = Object.entries(s.champs).sort((a, b) => b[1].gp - a[1].gp).slice(0, 3).map(c => c[0]);
+    return { id: p.id, team: S.teamName[p.team] || p.team, code: p.team, role: p.role, type: p.type, gp: s.gp, wr: s.wr, kda: s.kda,
+      k: s.k / s.gp, d: s.d / s.gp, a: s.a / s.gp, kp: s.kpAvg, csm: s.csm, dpm: s.dpm, vsm: s.vsm, top };
+  });
+  const cols = [
+    { k: "id", label: "Player", show: r => '<a class="plain" href="' + playerUrl(r.id) + '">' + esc(r.id) + '</a>' + (r.type === "Sub" ? ' <span class="sub">sub</span>' : "") },
+    { k: "team", label: "Team", show: r => '<a class="plain" href="' + teamUrl(r.code) + '">' + esc(r.team) + '</a>' },
+    { k: "role", label: "Role", show: r => esc(r.role) },
+    { k: "gp", label: "GP", num: 1, show: r => r.gp },
+    { k: "wr", label: "Win%", num: 1, show: r => pct(r.wr) },
+    { k: "kda", label: "KDA", num: 1, show: r => fmt(r.kda, 2) },
+    { k: "k", label: "K", num: 1, show: r => fmt(r.k) }, { k: "d", label: "D", num: 1, show: r => fmt(r.d) }, { k: "a", label: "A", num: 1, show: r => fmt(r.a) },
+    { k: "kp", label: "KP", num: 1, show: r => pct(r.kp) },
+    { k: "csm", label: "CS/m", num: 1, show: r => fmt(r.csm) },
+    { k: "dpm", label: "DPM", num: 1, show: r => Math.round(r.dpm) },
+    { k: "vsm", label: "VS/m", num: 1, show: r => fmt(r.vsm, 2) },
+    { k: "top", label: "Most played", show: r => r.top.map(c => champCell(icon, c)).join(" ") }
+  ];
+  const roles = ["All", "TOP", "JUNGLE", "MID", "ADC", "SUPPORT"];
+  const show = role => {
+    rEl.innerHTML = roles.map(x => '<button class="' + (x === role ? "on" : "") + '">' + x + '</button>').join("");
+    rEl.querySelectorAll("button").forEach((b, i) => b.onclick = () => show(roles[i]));
+    sortableTable(pEl, cols, rows.filter(r => role === "All" || r.role === role), "kda");
+  };
+  show("All");
+
+  const total = S.games.length / 10 || 1;
+  const crows = Object.values(S.champs).map(c => ({ champ: c.champ, gp: c.gp, pr: c.gp / total, wr: c.w / c.gp, kda: (c.k + c.a) / Math.max(1, c.d),
+    by: Object.entries(c.players).sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0]) }));
+  sortableTable(cEl, [
+    { k: "champ", label: "Champion", show: r => champCell(icon, r.champ) },
+    { k: "gp", label: "Picks", num: 1, show: r => r.gp },
+    { k: "pr", label: "Pick rate", num: 1, show: r => pct(r.pr) },
+    { k: "wr", label: "Win%", num: 1, show: r => pct(r.wr) },
+    { k: "kda", label: "KDA", num: 1, show: r => fmt(r.kda, 2) },
+    { k: "by", label: "Played by", show: r => r.by.map(id => '<a class="plain" href="' + playerUrl(id) + '">' + esc(id.split("#")[0]) + '</a>').join(", ") }
+  ], crows, "gp");
+})();
+</script>
+</body>
+</html>

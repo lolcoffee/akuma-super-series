@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teams – Akuma Super Series</title>
+<link rel="stylesheet" href="/page.css">
+</head>
+<body>
+<main>
+  <nav><a href="/">Home</a><a href="/schedule">Schedule &amp; Results</a><a class="on" href="/teams">Teams</a><a href="/stats">Stats</a><a href="/rules">Rulebook</a></nav>
+  <div class="tag">Akuma Super Series</div>
+  <h1>Teams</h1>
+  <p class="lead">Rosters from the blind-auction draft, with what each captain paid from their $50 budget. 👑 marks the captain.</p>
+  <div class="teams" id="teams"><section><p class="note">Loading…</p></section></div>
+</main>
+<footer>
+  Akuma Super Series is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
+</footer>
+<script src="/data.js"></script>
+<script>
+(async () => {
+  const el = document.getElementById("teams");
+  let rows;
+  try { rows = await loadTab("rosters"); }
+  catch (e) { el.innerHTML = '<section></section>'; showError(el.firstChild, e); return; }
+
+  const teams = [];
+  // Each team block: code row, name 4 rows below, then 5 player rows (role, player, price).
+  for (const codeRow of [8, 24]) for (let c = 1; c < 26; c += 4) {
+    const code = at(rows, codeRow, c + 1), name = at(rows, codeRow + 4, c);
+    if (!name) continue;
+    const players = [];
+    for (let i = 1; i <= 5; i++) {
+      const role = at(rows, codeRow + 4 + i, c), raw = at(rows, codeRow + 4 + i, c + 1), price = at(rows, codeRow + 4 + i, c + 2);
+      if (!raw) continue;
+      const m = raw.match(/^(.*?)\s*\(([^)]*)\)\s*$/);
+      players.push({ role, name: m ? m[1] : raw, pos: m ? m[2] : "", price });
+    }
+    teams.push({ code, name, players });
+  }
+  el.innerHTML = teams.length ? teams.map(t =>
+    '<section><div class="code">' + esc(t.code) + '</div><h2><a class="plain" href="' + teamUrl(t.code) + '">' + esc(t.name) + '</a></h2>' +
+    t.players.map(p => '<div class="p"><span class="r">' + esc(p.role) + '</span><span class="n"><a class="plain" href="' + playerUrl(p.name.replace(/^👑\s*/, "")) + '">' + esc(p.name) + '</a>' +
+      (p.pos ? '<small>' + esc(p.pos) + '</small>' : '') + '</span><span class="price">' + esc(p.price) + '</span></div>').join("") +
+    '</section>').join("") : '<section><p class="note">Rosters coming soon.</p></section>';
+})();
+</script>
+</body>
+</html>
