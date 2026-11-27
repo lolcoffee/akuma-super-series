@@ -25,7 +25,8 @@
   const code = (new URLSearchParams(location.search).get("t") || "").toUpperCase();
   let S, icon, sched;
   try { [S, icon, sched] = await Promise.all([loadStats(), champIcons(), loadTab("schedule")]); } catch (e) { showError(head, e); return; }
-  const name = S.teamName[code];
+  const name = S.teamName[code] || S.teamName[S.canon(code)];
+  if (!S.teamName[code] && name) { location.replace(teamUrl(S.canon(code))); return; }
   if (!name) { head.innerHTML = '<h1>Team not found</h1><p class="note"><a href="/teams">See all teams</a></p>'; return; }
   document.title = name + " – Akuma Super Series";
   const t = S.teams[code] || { gp: 0, w: 0, k: 0, d: 0, min: 0, fb: 0, ft: 0, blueGp: 0, blueW: 0, picks: {} };

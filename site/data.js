@@ -70,6 +70,19 @@ function parseRosters(rows) {
   return teams;
 }
 
+// Roster Sheet player -> team code (used to follow team code renames, e.g. KKKREW -> KKCREW).
+function rosterPlayerCodes(rows) {
+  const out = {};
+  for (const codeRow of [8, 24]) for (let c = 1; c < 26; c += 4) {
+    const code = at(rows, codeRow, c + 1); if (!code) continue;
+    for (let i = 1; i <= 5; i++) {
+      const raw = at(rows, codeRow + 4 + i, c + 1).replace(/^👑\s*/, "").replace(/\s*\([^)]*\)\s*$/, "");
+      if (raw) out[raw.trim().toLowerCase()] = code;
+    }
+  }
+  return out;
+}
+
 // ---------- Stats engine (Raw Data + Player IDs) ----------
 const num = v => { const n = parseFloat(String(v).replace(/[,%$]/g, "")); return isNaN(n) ? 0 : n; };
 const keyOf = s => String(s).trim().toLowerCase();
@@ -101,12 +114,21 @@ function derive(agg) {
 async function loadStats() {
   const [raw, pids, rost] = await Promise.all([loadTab("raw"), loadTab("players"), loadTab("rosters")]);
   const teamName = {}; parseRosters(rost).forEach(t => teamName[t.code] = t.name);
+  // Older team codes still used in Player IDs / Raw Data map to the Roster Sheet code by player overlap.
+  const rosterCode = rosterPlayerCodes(rost), votes = {};
+  for (let r = 1; r < pids.length; r++) {
+    const t = at(pids, r, 2), rc = rosterCode[keyOf(at(pids, r, 0))];
+    if (t && !teamName[t] && rc) { const v = votes[t] || (votes[t] = {}); v[rc] = (v[rc] || 0) + 1; }
+  }
+  const teamAlias = {};
+  Object.entries(votes).forEach(([t, v]) => teamAlias[t] = Object.entries(v).sort((a, b) => b[1] - a[1])[0][0]);
+  const canon = c => teamAlias[c] || c;
 
   // Player registry
   const players = {}, alias = {};
   for (let r = 1; r < pids.length; r++) {
     const id = at(pids, r, 0); if (!id) continue;
-    players[id] = { id, team: at(pids, r, 2), role: at(pids, r, 3), type: at(pids, r, 4) || "Drafted",
+    players[id] = { id, team: canon(at(pids, r, 2)), role: at(pids, r, 3), type: at(pids, r, 4) || "Drafted",
       subFor: at(pids, r, 5), price: at(pids, r, 6), stats: blankAgg() };
     alias[keyOf(id)] = id;
     at(pids, r, 1).split(",").map(s => s.trim()).filter(Boolean).forEach(a => alias[keyOf(a)] = id);
@@ -117,9 +139,9 @@ async function loadStats() {
   for (let r = 1; r < raw.length; r++) {
     const row = raw[r]; const name = (row[2] || "").trim(); if (!name) continue;
     let id = alias[keyOf(name)];
-    if (!id) { id = name; alias[keyOf(name)] = id; players[id] = { id, team: (row[1] || "").trim(), role: (row[3] || "").trim(), type: "Sub", subFor: "", price: "", stats: blankAgg() }; }
+    if (!id) { id = name; alias[keyOf(name)] = id; players[id] = { id, team: canon((row[1] || "").trim()), role: (row[3] || "").trim(), type: "Sub", subFor: "", price: "", stats: blankAgg() }; }
     const g = {
-      date: (row[0] || "").trim(), team: (row[1] || "").trim(), player: id, role: (row[3] || "").trim(), side: (row[4] || "").trim(),
+      date: (row[0] || "").trim(), team: canon((row[1] || "").trim()), player: id, role: (row[3] || "").trim(), side: (row[4] || "").trim(),
       win: num(row[5]) > 0 ? 1 : 0, champ: (row[7] || "").trim(), k: num(row[8]), d: num(row[9]), a: num(row[10]),
       kp: num(row[12]), fb: num(row[13]), dmg: num(row[14]), vis: num(row[16]), cs: num(row[21]), gold: num(row[23]),
       gd15: num(row[27]), csd15: num(row[30]), ft: num(row[33]), solo: num(row[37]), min: num(row[43]), match: (row[45] || "").trim(),
@@ -149,7 +171,7 @@ async function loadStats() {
   }
   Object.values(players).forEach(p => derive(p.stats));
   computeRatings(games, players);
-  return { players, alias, games, teams: teamsAgg, champs: champAgg, teamName };
+  return { players, alias, games, teams: teamsAgg, champs: champAgg, teamName, canon };
 }
 
 // ---------- Team logos + player cards ----------
