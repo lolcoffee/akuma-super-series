@@ -30,14 +30,15 @@
   document.title = name + " – Akuma Super Series";
   const t = S.teams[code] || { gp: 0, w: 0, k: 0, d: 0, min: 0, fb: 0, ft: 0, blueGp: 0, blueW: 0, picks: {} };
   const rounds = parseSchedule(sched);
+  const codeOf = {}; Object.entries(S.teamName).forEach(([c, n]) => codeOf[n] = c);
   const series = []; rounds.forEach(rd => rd.matches.forEach(m => { if (m.a === name || m.b === name) series.push({ rd: rd.title, m }); }));
   const sw = series.filter(x => x.m.winner === name).length, sl = series.filter(x => x.m.winner && x.m.winner !== name).length;
-  head.innerHTML = '<div class="tag">' + esc(code) + '</div><h1>' + esc(name) + '</h1><p class="lead">Series record ' + sw + '–' + sl + ' · games ' + t.w + '–' + (t.gp - t.w) + '</p>';
+  head.innerHTML = '<div class="thead">' + teamLogo(code, "big") + '<div><div class="tag">' + esc(code) + '</div><h1>' + esc(name) + '</h1><p class="lead">Series record ' + sw + '–' + sl + ' · games ' + t.w + '–' + (t.gp - t.w) + '</p></div></div>';
   if (t.gp) document.getElementById("kpis").innerHTML = [["Game win%", pct(t.w / t.gp)], ["Avg game time", fmt(t.min / t.gp) + " min"], ["Kills / game", fmt(t.k / t.gp)],
     ["Deaths / game", fmt(t.d / t.gp)], ["First blood", pct(t.fb / t.gp)], ["First tower", pct(t.ft / t.gp)],
     ["Blue side", t.blueGp ? t.blueW + "–" + (t.blueGp - t.blueW) : "–"], ["Red side", (t.gp - t.blueGp) ? (t.w - t.blueW) + "–" + (t.gp - t.blueGp - (t.w - t.blueW)) : "–"]]
     .map(x => '<div class="kpi"><span>' + x[0] + '</span><b>' + x[1] + '</b></div>').join("");
-  const roster = Object.values(S.players).filter(p => p.team === code).map(p => ({ id: p.id, role: p.role, type: p.type, subFor: p.subFor, price: p.price ? +p.price : 0,
+  const roster = Object.values(S.players).filter(p => p.team === code).map(p => ({ id: p.id, role: p.role, type: p.type, subFor: p.subFor, price: num(p.price),
     gp: p.stats.gp, rating: p.stats.rating, kda: p.stats.kda, kp: p.stats.kpAvg, csm: p.stats.csm, dpm: p.stats.dpm,
     order: ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"].indexOf(p.role) + (p.type === "Sub" ? 10 : 0) }));
   sortableTable(document.getElementById("roster"), [
@@ -51,7 +52,7 @@
   document.getElementById("series").innerHTML = series.length ? series.map(({ rd, m }) => {
     const opp = m.a === name ? m.b : m.a, my = m.a === name ? m.sa : m.sb, their = m.a === name ? m.sb : m.sa;
     const res = !m.winner ? '<span class="sub">' + esc(m.date) + '</span>' : (m.winner === name ? '<span class="w">W ' + my + '–' + their + '</span>' : '<span class="l">L ' + my + '–' + their + '</span>');
-    return '<div class="match"><span class="t">' + esc(rd) + '</span><span class="score">' + res + '</span><span class="t b">vs ' + esc(opp || "TBD") + '</span></div>';
+    return '<div class="match"><span class="t">' + esc(rd) + '</span><span class="score">' + res + '</span><span class="t b">vs ' + esc(opp || "TBD") + teamLogo(codeOf[opp], "sm") + '</span></div>';
   }).join("") : '<p class="note">No series yet.</p>';
   const picks = Object.entries(t.picks).map(([c, n]) => ({ c, n }));
   if (picks.length) sortableTable(document.getElementById("picks"), [{ k: "c", label: "Champion", show: r => champCell(icon, r.c) }, { k: "n", label: "Games", num: 1, show: r => r.n }], picks, "n");

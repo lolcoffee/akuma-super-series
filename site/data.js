@@ -152,6 +152,13 @@ async function loadStats() {
   return { players, alias, games, teams: teamsAgg, champs: champAgg, teamName };
 }
 
+// ---------- Team logos + player cards ----------
+// Logos live in /logos/<TEAM CODE>.png. Player cards (auction cards with lot # and min bid removed) live in /cards/<name>.webp.
+const logoUrl = code => code ? "/logos/" + encodeURIComponent(code) + ".png" : "";
+const teamLogo = (code, cls) => code ? '<img class="logo' + (cls ? " " + cls : "") + '" src="' + logoUrl(code) + '" alt="" loading="lazy" onerror="this.remove()">' : "";
+const CARDS = {"jølts#na1":"jolts","itaconic#1408":"itaconic","ado#idol":"ado","turnuptom#adc":"turnuptom","queenie#1jg":"queenie","aleksey batrakov#kral":"aleksey-batrakov","wistfully#amau":"wistfully","vaeldr#gamer":"vaeldr","kite#run":"kite","waf#007":"waf","cluegichungus#akm":"cluegichungus","uselesschungus#akm":"uselesschungus","crispy#ten":"crispy","kreydawg#na1":"kreydawg","instrument#xxi":"instrument","nathanatos#seven":"nathanatos","jinlo#fwc":"jinlo","ben#germn":"ben","ohsnapski#na1":"ohsnapski","doyouneedahouse#minne":"doyouneedahouse","thatan#na1":"thatan","flex offender#6 t":"flex-offender","splashproo#na1":"splashproo","resolute#chime":"resolute","fembop#ego":"fembop","50caltaco#chung":"50caltaco","humor#haha":"humor","dove#helm":"dove","flickingbeaver28#bean":"flickingbeaver28","crecious#choi":"crecious","ruined#smile":"ruined","firemana#flame":"firemana","stupidchungus#akm":"stupidchungus","chief#1160":"chief","quickslice#1554":"quickslice","mikelasy#na1":"mikelasy","thomas#akm":"thomas","bobbyy#smile":"bobbyy","stormii#bunny":"stormii","sh3nsei#roses":"sh3nsei","rachet00#yeji":"rachet00","eswag#na1":"eswag","rapidfire#na1":"rapidfire","sneakymastamind#snky":"sneakymastamind","navaja#lol":"navaja","thrasherxd56#na1":"thrasherxd56","neversaw#mla":"neversaw","detectiveshibi#spy":"detectiveshibi","sore emperor#1414":"sore-emperor","an enemy anemone#ocean":"an-enemy-anemone","white shadow#turbo":"white-shadow","tuff daddy#na1":"tuff-daddy","paragxn#gxn":"paragxn","tate#pog":"tate","fiery#slam":"fiery","ritty#na1":"ritty","hwasal#2504":"hwasal","moowy#light":"moowy","zarkyros#zai":"zarkyros","nitrodax5#na2":"nitrodax5","chudsting#5555":"chudsting","parallax#1au":"parallax","royalty free rat#rat":"royalty-free-rat"};
+const cardUrl = id => { const s = CARDS[keyOf(id)]; return s ? "/cards/" + s + ".webp" : ""; };
+
 // ---------- Champion icons (Riot Data Dragon) ----------
 let _dd = null;
 async function champIcons() {

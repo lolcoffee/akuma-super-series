@@ -40,7 +40,7 @@
     teams.push({ code, name, players });
   }
   el.innerHTML = teams.length ? teams.map(t =>
-    '<section><div class="code">' + esc(t.code) + '</div><h2><a class="plain" href="' + teamUrl(t.code) + '">' + esc(t.name) + '</a></h2>' +
+    '<section><div class="thead">' + teamLogo(t.code) + '<div><div class="code">' + esc(t.code) + '</div><h2><a class="plain" href="' + teamUrl(t.code) + '">' + esc(t.name) + '</a></h2></div></div>' +
     t.players.map(p => '<div class="p"><span class="r">' + esc(p.role) + '</span><span class="n"><a class="plain" href="' + playerUrl(p.name.replace(/^👑\s*/, "")) + '">' + esc(p.name) + '</a>' +
       (p.pos ? '<small>' + esc(p.pos) + '</small>' : '') + '</span><span class="price">' + esc(p.price) + '</span></div>').join("") +
     '</section>').join("") : '<section><p class="note">Rosters coming soon.</p></section>';

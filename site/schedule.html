@@ -35,20 +35,6 @@
   catch (e) { showError(mEl, e); showError(sEl, e); return; }
 
   const rounds = parseSchedule(sched);
-
-  // Matches
-  mEl.innerHTML = rounds.map(rd => {
-    const list = rd.matches.filter(m => m.a || m.b);
-    const body = list.length ? list.map(m => {
-      const done = m.sa !== "";
-      return '<div class="match">' +
-        '<span class="t' + (m.winner && m.winner === m.a ? " w" : "") + '">' + esc(m.a || "TBD") + '</span>' +
-        '<span class="score' + (done ? "" : " tbd") + '">' + (done ? esc(m.sa) + " – " + esc(m.sb) : "vs") + '</span>' +
-        '<span class="t b' + (m.winner && m.winner === m.b ? " w" : "") + '">' + esc(m.b || "TBD") + '</span></div>';
-    }).join("") : '<p class="note">Matchups to be decided.</p>';
-    return '<div class="round"><h3>' + esc(rd.title) + '</h3>' + body + '</div>';
-  }).join("");
-
   // Team names from the Swiss Stage "TEAMS" list (code -> name)
   const names = {};
   for (let r = 0; r < swiss.length; r++) for (let c = 0; c < (swiss[r] || []).length; c++) {
@@ -56,6 +42,21 @@
       for (let k = r + 1; k < swiss.length && at(swiss, k, c); k++) names[at(swiss, k, c)] = at(swiss, k, c + 1);
     }
   }
+  const codeOf = {}; Object.entries(names).forEach(([c, n]) => codeOf[n] = c);
+
+  // Matches
+  mEl.innerHTML = rounds.map(rd => {
+    const list = rd.matches.filter(m => m.a || m.b);
+    const body = list.length ? list.map(m => {
+      const done = m.sa !== "";
+      return '<div class="match">' +
+        '<span class="t' + (m.winner && m.winner === m.a ? " w" : "") + '">' + teamLogo(codeOf[m.a], "sm") + esc(m.a || "TBD") + '</span>' +
+        '<span class="score' + (done ? "" : " tbd") + '">' + (done ? esc(m.sa) + " – " + esc(m.sb) : "vs") + '</span>' +
+        '<span class="t b' + (m.winner && m.winner === m.b ? " w" : "") + '">' + esc(m.b || "TBD") + teamLogo(codeOf[m.b], "sm") + '</span></div>';
+    }).join("") : '<p class="note">Matchups to be decided.</p>';
+    return '<div class="round"><h3>' + esc(rd.title) + '</h3>' + body + '</div>';
+  }).join("");
+
   const codeList = (col, r0, r1) => { const out = []; for (let r = r0; r <= r1; r++) { const v = at(swiss, r, col); if (v) out.push(v); } return out; };
   const qualified = new Set([...codeList(11, 8, 10), ...codeList(16, 8, 10), ...codeList(21, 8, 10)].map(c => names[c] || c));
   const eliminated = new Set([...codeList(16, 21, 23), ...codeList(21, 16, 18)].map(c => names[c] || c));
@@ -73,7 +74,7 @@
   sEl.innerHTML = '<table><tr><th>Team</th><th class="num">Record</th><th class="num">Games</th><th>Status</th></tr>' +
     rowsS.map(([n, s]) => {
       const st = qualified.has(n) ? '<span class="st q">Qualified</span>' : eliminated.has(n) ? '<span class="st e">Eliminated</span>' : '<span class="st a">In contention</span>';
-      return '<tr><td>' + esc(n) + '</td><td class="num">' + s.w + '–' + s.l + '</td><td class="num">' + s.gw + '–' + s.gl + '</td><td>' + st + '</td></tr>';
+      return '<tr><td>' + teamLogo(codeOf[n], "sm") + esc(n) + '</td><td class="num">' + s.w + '–' + s.l + '</td><td class="num">' + s.gw + '–' + s.gl + '</td><td>' + st + '</td></tr>';
     }).join("") + '</table>';
 })();
 </script>

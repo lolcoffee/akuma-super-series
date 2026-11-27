@@ -50,3 +50,21 @@ th.sort.on::after { content:" ▾"; }
 .filters button { background:#24212a; color:var(--muted); border:0; border-radius:999px; padding:6px 12px; font:inherit; font-size:13px; cursor:pointer; }
 .filters button.on { background:var(--accent); color:#fff; }
 .sub { color:var(--muted); font-size:13px; }
+
+/* Logos + player cards */
+.logo { width:22px; height:22px; object-fit:contain; vertical-align:middle; border-radius:4px; }
+.logo.sm { width:20px; height:20px; margin:0 8px; }
+.match .t:not(.b) .logo.sm, td .logo.sm { margin-left:0; }
+.logo.big { width:84px; height:84px; border-radius:12px; flex:none; }
+.thead { display:flex; align-items:center; gap:14px; }
+.thead > .logo:not(.big) { width:46px; height:46px; border-radius:8px; flex:none; }
+.teamtag { display:inline-flex; align-items:center; gap:8px; }
+.hero.has-card { display:grid; grid-template-columns:minmax(220px,300px) 1fr; gap:28px; align-items:start; }
+.hero.has-card .kpis { grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); }
+.pcard { position:relative; container-type:inline-size; border-radius:14px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,.45); }
+.pcard img { display:block; width:100%; height:auto; }
+.rbox { position:absolute; left:80.4%; top:9.1%; width:14.7%; height:8.1%; border:2px solid #e6c27a; background:rgba(18,12,26,.9);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1; }
+.rbox span { color:#e6c27a; font-size:2.6cqw; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
+.rbox b { color:#fff; font-size:6.2cqw; font-weight:800; margin-top:1cqw; font-variant-numeric:tabular-nums; }
+@media (max-width:640px){ .hero.has-card { grid-template-columns:1fr; } .pcard { max-width:320px; } }
